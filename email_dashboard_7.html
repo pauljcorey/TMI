@@ -468,6 +468,49 @@
   #flowTable thead th { padding-bottom: 10px; }
   #flowTable tbody td { padding: 10px 8px; vertical-align: top; }
 
+
+  /* TRAILING 12 MONTHS TABLE */
+  #t12Table {
+    font-size: 12px;
+    white-space: nowrap;
+  }
+  #t12Table thead th {
+    text-align: right;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--muted);
+    padding: 0 12px 10px 12px;
+    border-bottom: 2px solid var(--border);
+    background: var(--surface);
+  }
+  #t12Table thead th:first-child {
+    text-align: left;
+    position: sticky;
+    left: 0;
+    background: var(--surface);
+    z-index: 1;
+  }
+  #t12Table tbody td {
+    text-align: right;
+    padding: 9px 12px;
+    border-bottom: 1px solid var(--border);
+  }
+  #t12Table tbody td:first-child {
+    text-align: left;
+    font-weight: 600;
+    position: sticky;
+    left: 0;
+    background: var(--card);
+  }
+  #t12Table tbody tr:nth-child(even) td {
+    background: var(--surface);
+  }
+  #t12Table tbody tr:nth-child(even) td:first-child {
+    background: var(--surface);
+  }
+
 </style>
 </head>
 <body>
@@ -579,10 +622,24 @@
       </div>
     </div>
     <div class="chart-card">
-      <div class="chart-title">Total Revenue</div>
-      <div class="chart-subtitle" id="rev-chart-sub">By month, filtered selection</div>
+      <div class="chart-title">Total Conversions</div>
+      <div class="chart-subtitle" id="conv-chart-sub">By month, filtered selection</div>
       <div class="chart-container">
-        <canvas id="revChart"></canvas>
+        <canvas id="convChart"></canvas>
+      </div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">Total Opens</div>
+      <div class="chart-subtitle" id="opens-chart-sub">By month, filtered selection</div>
+      <div class="chart-container">
+        <canvas id="opensChart"></canvas>
+      </div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">Total Clicks</div>
+      <div class="chart-subtitle" id="clicks-chart-sub">By month, filtered selection</div>
+      <div class="chart-container">
+        <canvas id="clicksChart"></canvas>
       </div>
     </div>
   </div>
@@ -657,6 +714,22 @@
         <tbody></tbody>
       </table>
     </div>
+  </div>
+
+  <!-- TRAILING 12 MONTHS -->
+  <div class="section-title" style="margin-top:8px;">Trailing 12 Months</div>
+  <div class="table-card" style="overflow-x:auto; margin-bottom:32px;">
+    <div class="table-header">
+      <div class="table-icon" style="background:#f0edff; color:#6b3fd4;">&#128197;</div>
+      <div>
+        <div class="table-title">Trailing 12 Months</div>
+        <div class="table-sub" id="t12-sub">Temporary Tattoos</div>
+      </div>
+    </div>
+    <table class="data-table" id="t12Table" style="min-width:1100px;">
+      <thead><tr id="t12-head-row"></tr></thead>
+      <tbody id="t12-body"></tbody>
+    </table>
   </div>
 
 <div class="dashboard-footer">
@@ -3163,7 +3236,7 @@ function liftHTML(curr, momPrev, yoyPrev) {
 }
 
 // Charts
-let sentChart = null, revChart = null;
+let sentChart = null, opensChart = null, clicksChart = null, convChart = null;
 
 function getMonthlyByBrand(field) {
   // Use all-time data for charts, grouped by month, for selected brand
@@ -3171,7 +3244,11 @@ function getMonthlyByBrand(field) {
   RAW_DATA.filter(r => r.brand === state.brand && state.types.has(r.type)).forEach(r => {
     const key = r.date.substring(0, 7);
     if (!byMonth[key]) byMonth[key] = 0;
-    byMonth[key] += r[field];
+    if (field === 'conversions') {
+      byMonth[key] += Math.round(r.conversion_rate * r.sent);
+    } else {
+      byMonth[key] += r[field];
+    }
   });
   const keys = Object.keys(byMonth).sort();
   return {
@@ -3222,16 +3299,40 @@ function renderCharts() {
     options: { ...chartOpts, scales: { ...chartOpts.scales, y: { ...chartOpts.scales.y, ticks: { ...chartOpts.scales.y.ticks, callback: v => fmtNum(v) } } } }
   });
 
-  if (revChart) revChart.destroy();
-  const revCtx = document.getElementById('revChart').getContext('2d');
-  const revData = getMonthlyByBrand('revenue');
-  revChart = new Chart(revCtx, {
+  if (opensChart) opensChart.destroy();
+  const opensCtx = document.getElementById('opensChart').getContext('2d');
+  const opensData = getMonthlyByBrand('unique_opens');
+  opensChart = new Chart(opensCtx, {
     type: 'bar',
     data: {
-      labels: revData.labels,
-      datasets: [{ label: 'Revenue', data: revData.values, backgroundColor: color, borderRadius: 5, borderSkipped: false }]
+      labels: opensData.labels,
+      datasets: [{ label: 'Opens', data: opensData.values, backgroundColor: color, borderRadius: 5, borderSkipped: false }]
     },
-    options: { ...chartOpts, scales: { ...chartOpts.scales, y: { ...chartOpts.scales.y, ticks: { ...chartOpts.scales.y.ticks, callback: v => '$' + fmtNum(v) } } } }
+    options: { ...chartOpts, scales: { ...chartOpts.scales, y: { ...chartOpts.scales.y, ticks: { ...chartOpts.scales.y.ticks, callback: v => fmtNum(v) } } } }
+  });
+
+  if (clicksChart) clicksChart.destroy();
+  const clicksCtx = document.getElementById('clicksChart').getContext('2d');
+  const clicksData = getMonthlyByBrand('unique_clicks');
+  clicksChart = new Chart(clicksCtx, {
+    type: 'bar',
+    data: {
+      labels: clicksData.labels,
+      datasets: [{ label: 'Clicks', data: clicksData.values, backgroundColor: color, borderRadius: 5, borderSkipped: false }]
+    },
+    options: { ...chartOpts, scales: { ...chartOpts.scales, y: { ...chartOpts.scales.y, ticks: { ...chartOpts.scales.y.ticks, callback: v => fmtNum(v) } } } }
+  });
+
+  if (convChart) convChart.destroy();
+  const convCtx = document.getElementById('convChart').getContext('2d');
+  const convData = getMonthlyByBrand('conversions');
+  convChart = new Chart(convCtx, {
+    type: 'bar',
+    data: {
+      labels: convData.labels,
+      datasets: [{ label: 'Conversions', data: convData.values, backgroundColor: color, borderRadius: 5, borderSkipped: false }]
+    },
+    options: { ...chartOpts, scales: { ...chartOpts.scales, y: { ...chartOpts.scales.y, ticks: { ...chartOpts.scales.y.ticks, callback: v => fmtNum(v) } } } }
   });
 }
 
@@ -3274,7 +3375,9 @@ function renderBadges() {
 
 function updateMonthSubtitle() {
   document.getElementById('sent-chart-sub').textContent = `${state.brand} · 12 months trailing`;
-  document.getElementById('rev-chart-sub').textContent = `${state.brand} · 12 months trailing`;
+  document.getElementById('opens-chart-sub').textContent = `${state.brand} · 12 months trailing`;
+  document.getElementById('clicks-chart-sub').textContent = `${state.brand} · 12 months trailing`;
+  document.getElementById('conv-chart-sub').textContent = `${state.brand} · 12 months trailing`;
 }
 
 function update() {
@@ -3335,6 +3438,7 @@ function update() {
   updateMonthSubtitle();
   renderTables();
   renderFlowTable();
+  renderTrailing12();
 }
 
 // Toggle logic
@@ -3540,6 +3644,59 @@ function renderFlowTable() {
       </td>
     </tr>`;
   }).join('');
+}
+
+
+function renderTrailing12() {
+  const dm = getDisplayMonth(); // most recent complete month
+  const months = [];
+  for (let i = 11; i >= 0; i--) {
+    months.push(new Date(dm.getFullYear(), dm.getMonth() - i, 1));
+  }
+
+  function monthRows(m) {
+    const start = new Date(m.getFullYear(), m.getMonth(), 1);
+    const end = new Date(m.getFullYear(), m.getMonth() + 1, 0);
+    end.setHours(23, 59, 59, 999);
+    return RAW_DATA.filter(r => {
+      const d = new Date(r.date);
+      return d >= start && d <= end && r.brand === state.brand && state.types.has(r.type);
+    });
+  }
+
+  const monthly = months.map(m => {
+    const rows = monthRows(m);
+    const agg = aggregate(rows) || {
+      totalSent: 0, weightedOpen: 0, weightedClick: 0, weightedConv: 0, totalRevenue: 0,
+      totalOpens: 0, totalClicks: 0, totalUnsubs: 0, totalConversions: 0, weightedUnsub: 0
+    };
+    const yr = m.getFullYear(); const mo = String(m.getMonth() + 1).padStart(2, '0'); return { label: `${yr}-${mo}`, count: rows.length, ...agg };
+  });
+
+  const sub = document.getElementById('t12-sub');
+  if (sub) sub.textContent = `${state.brand} · ${monthly[0].label} – ${monthly[11].label}`;
+
+  const headRow = document.getElementById('t12-head-row');
+  headRow.innerHTML = '<th>Metric</th>' + monthly.map(m => `<th>${m.label}</th>`).join('');
+
+  const rowDefs = [
+    { label: 'Emails', get: m => m.count.toLocaleString() },
+    { label: '# Sent', get: m => m.totalSent.toLocaleString() },
+    { label: '# Opens', get: m => m.totalOpens.toLocaleString() },
+    { label: 'Open Rate', get: m => (m.weightedOpen * 100).toFixed(2) + '%' },
+    { label: '# Clicks', get: m => m.totalClicks.toLocaleString() },
+    { label: 'Click Rate', get: m => (m.weightedClick * 100).toFixed(2) + '%' },
+    { label: '# Unsub', get: m => m.totalUnsubs.toLocaleString() },
+    { label: 'Unsub Rate', get: m => (m.weightedUnsub * 100).toFixed(2) + '%' },
+    { label: 'Conversions', get: m => m.totalConversions.toLocaleString() },
+    { label: 'Conversion Rate', get: m => (m.weightedConv * 100).toFixed(2) + '%' },
+    { label: 'Revenue', get: m => '$' + m.totalRevenue.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 }) },
+  ];
+
+  const body = document.getElementById('t12-body');
+  body.innerHTML = rowDefs.map(rd =>
+    `<tr><td>${rd.label}</td>${monthly.map(m => `<td>${rd.get(m)}</td>`).join('')}</tr>`
+  ).join('');
 }
 
 // Init
