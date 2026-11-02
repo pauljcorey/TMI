@@ -14646,7 +14646,7 @@ function getMonthLabel() {
 
 function filterData(start, end) {
   return RAW_DATA.filter(r => {
-    const d = new Date(r.date);
+    const d = new Date(r.date + 'T00:00:00');
     return d >= start && d <= end &&
       r.brand === state.brand &&
       state.types.has(r.type);
@@ -14655,7 +14655,7 @@ function filterData(start, end) {
 
 function filterDataAllBrands(start, end) {
   return RAW_DATA.filter(r => {
-    const d = new Date(r.date);
+    const d = new Date(r.date + 'T00:00:00');
     return d >= start && d <= end && state.types.has(r.type);
   });
 }
@@ -14952,7 +14952,7 @@ function renderTables() {
   const { start, end } = getDisplayMonthRange();
   // Get campaign rows for selected brand in the display month
   const campRows = RAW_DATA.filter(r => {
-    const d = new Date(r.date);
+    const d = new Date(r.date + 'T00:00:00');
     return d >= start && d <= end && r.brand === state.brand && r.type === 'Campaign';
   });
 
@@ -14971,7 +14971,7 @@ function renderTables() {
       const rankClass = i === 0 ? 'rank-1' : i === 1 ? 'rank-2' : i === 2 ? 'rank-3' : 'rank-other';
       const name = r.name || 'Unnamed';
       const subject = r.subject || '—';
-      const dateSent = r.date ? new Date(r.date).toLocaleDateString('en-US', {month: 'short', day: 'numeric', year: 'numeric'}) : '—';
+      const dateSent = r.date ? new Date(r.date + 'T00:00:00').toLocaleDateString('en-US', {month: 'short', day: 'numeric', year: 'numeric'}) : '—';
       return `<tr>
         <td><span class="email-name"><span class="rank-badge ${rankClass}">${i+1}</span>${name}</span></td>
         <td style="color:var(--muted); font-size:12px; white-space:nowrap">${dateSent}</td>
@@ -15003,7 +15003,7 @@ function renderTables() {
       const rankClass = i === 0 ? 'rank-1' : i === 1 ? 'rank-2' : i === 2 ? 'rank-3' : 'rank-other';
       const name = r.name || 'Unnamed';
       const subject = r.subject || '—';
-      const dateSent = r.date ? new Date(r.date).toLocaleDateString('en-US', {month: 'short', day: 'numeric', year: 'numeric'}) : '—';
+      const dateSent = r.date ? new Date(r.date + 'T00:00:00').toLocaleDateString('en-US', {month: 'short', day: 'numeric', year: 'numeric'}) : '—';
       const revStr = '$' + r.revenue.toLocaleString('en-US', {minimumFractionDigits: 0, maximumFractionDigits: 0});
       const aovStr = r.conversions > 0 ? '$' + r.aov.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}) : '—';
       return `<tr>
@@ -15025,7 +15025,7 @@ function renderFlowTable() {
   // Both comparison periods
   function getFlowRows(s, e) {
     return RAW_DATA.filter(r => {
-      const d = new Date(r.date);
+      const d = new Date(r.date + 'T00:00:00');
       return d >= s && d <= e && r.brand === state.brand && r.type === 'Flow';
     });
   }
@@ -15134,7 +15134,7 @@ function renderTrailing12() {
     const end = new Date(m.getFullYear(), m.getMonth() + 1, 0);
     end.setHours(23, 59, 59, 999);
     return RAW_DATA.filter(r => {
-      const d = new Date(r.date);
+      const d = new Date(r.date + 'T00:00:00');
       return d >= start && d <= end && r.brand === state.brand && state.types.has(r.type);
     });
   }
